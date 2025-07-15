@@ -9,18 +9,21 @@ const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 
-//conexion a la base de datos
 connectDb();
 
-// middlewares
-app.use(cors());
+// Middlewares
+app.use(cors({
+  origin: '*', 
+  methods: ['GET', 'POST'],
+}));
 app.use(express.json());
 app.use(loggerMiddleware);
 
-//rutas 
-
-app.use("/api/productos",productRoutes);
-app.use("/api/auth",authRoutes);
+// Rutas
+app.use("/api/productos", productRoutes);
+app.use("/api/auth", authRoutes);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Servidor corriendo correctamente en el puerto ${PORT}`));
+app.listen(5000, '0.0.0.0', () => {
+  console.log(`Servidor corriendo en el puerto 5000`);
+});

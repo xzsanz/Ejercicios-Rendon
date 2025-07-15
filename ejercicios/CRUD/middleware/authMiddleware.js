@@ -1,19 +1,24 @@
-const jwt = require("jsonwebtoken");
+const jwt = require('jsonwebtoken');
 
-const authMiddleware = (req,res,next) => {
-    const authHeader = req.header("Authorization");
-    if (!authHeader|| !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({message:"Token requerido"});
-    }
-    const token = authHeader.split(" ")[1];
-    try {
-        const decoded = jwt.verify(token,process.env.JWT_SECRET);
-            req.user = decoded;
+const protect = (req, res, next) => {
+    let token;
+
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        try {
+            token = req.headers.authorization.split(' ')[1];
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            req.user = decoded.userId;
+
             next();
-    } catch (error) {
-        res.status(401).json({message : "Token invalido"});
+        } catch (error) {
+            console.error('Error al verificar el token', error);
+            res.status(401).json({ message: 'No autorizado, token no válido' });
+        }
     }
 
-
+    if (!token) {
+        res.status(401).json({ message: 'No autorizado, no hay token' });
+    }
 };
-module.exports = authMiddleware;
+
+module.exports = protect;

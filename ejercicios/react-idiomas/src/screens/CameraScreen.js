@@ -1,60 +1,41 @@
-import React, { useState } from 'react';
-import { View, Text, Button, Image, StyleSheet } from 'react-native';
-import { Camera } from 'expo-camera';
+import React from 'react';
+import { View, Text, Button, FlatList, TouchableOpacity } from 'react-native';
+import { useLanguage } from '../context/LanguageContext';
+import { useNavigation } from '@react-navigation/native';
 
-const CameraScreen = () => {
-  const [hasPermission, setHasPermission] = useState(null);
-  const [photo, setPhoto] = useState(null);
-  const [camera, setCamera] = useState(null);
+const products = [
+  { id: '1', name: 'Product 1' },
+  { id: '2', name: 'Product 2' },
+  { id: '3', name: 'Product 3' },
+];
 
-  React.useEffect(() => {
-    (async () => {
-      const { status } = await Camera.requestPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
-  }, []);
-
-  if (hasPermission === null) {
-    return <Text>Requesting camera permission...</Text>;
-  }
-  if (hasPermission === false) {
-    return <Text>No access to camera</Text>;
-  }
-
-  const takePhoto = async () => {
-    if (camera) {
-      const photoData = await camera.takePictureAsync();
-      setPhoto(photoData.uri);
-    }
-  };
+const HomeScreen = () => {
+  const { translations, changeLanguage } = useLanguage();
+  const navigation = useNavigation();
 
   return (
-    <View style={styles.container}>
-      <Camera style={styles.camera} ref={(ref) => setCamera(ref)}>
-        <View style={styles.buttonContainer}>
-          <Button title="Take Photo" onPress={takePhoto} />
-        </View>
-      </Camera>
-      {photo && <Image source={{ uri: photo }} style={{ width: 100, height: 100 }} />}
+    <View style={{ flex: 1, padding: 20 }}>
+      <Text style={{ fontSize: 24 }}>{translations.welcome}</Text>
+      <View style={{ flexDirection: 'row', marginVertical: 20 }}>
+        <Button title="Español" onPress={() => changeLanguage('es')} />
+        <Button title="English" onPress={() => changeLanguage('en')} />
+      </View>
+
+      <Text style={{ fontSize: 18, marginBottom: 10 }}>{translations.products}</Text>
+      <FlatList
+        data={products}
+        renderItem={({ item }) => (
+          <View style={{ padding: 10, borderBottomWidth: 1 }}>
+            <Text>{item.name}</Text>
+          </View>
+        )}
+        keyExtractor={(item) => item.id}
+      />
+      <TouchableOpacity onPress={() => navigation.navigate('Camera')}>
+        <Text style={{ color: 'blue', marginTop: 20 }}>{translations.takePhoto}</Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  camera: {
-    width: '100%',
-    height: '100%',
-  },
-  buttonContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: '40%',
-  },
-});
-
-export default CameraScreen;
+export default HomeScreen;

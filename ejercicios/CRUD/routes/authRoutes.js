@@ -1,38 +1,57 @@
-const express = require("express");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
-
+const express = require('express');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const User = require('../models/User');
 const router = express.Router();
 
-//registrar
-router.post("/registro",async(req,res)=>{
-    const {username,password} = req.body;
-    const hashed = await bcrypt.hash(password,10);
-    try {
-        const user =await User.create({username,password:hashed});
-        res.status(201).json({message: "Usuario creado correctamente "});
 
-    } catch (error) {
-        res.status(400).json({error:"usuario ya existe "})
-    }
-});
+router.post('/register', async (req, res) => {
+  const { username, password } = req.body;
 
-//Login metodo 
-router.post("/login",async(req,res) => {
-    const {username,password} = req.body;
-    const user = await User.findOne({username});
-    if(!user){
-        return res.status(404).json({error : "Usuario no encontrado"});
+  try {
+    const userExists = await User.findOne({ username });
+    if (userExists) {
+      return res.status(400).json({ message: 'El usuario ya existe' });
     }
-    const valid = await bcrypt.compare(password, user.password);
-    if(!valid){
-        return res.status(401).json({error : "Contraseña incorrecta"});
-    }
-    const token = jwt.sign({id: user._id},process.env.JWT_SECRET, {
-        expiresIn : "1h",
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    const user = new User({
+      username,
+      password: hashedPassword,
     });
-    res.json({token});
+    await user.save();
+
+    res.status(201).json({ message: 'Usuario creado exitosamente' });
+  } catch (error) {
+    console.error('Error al registrar usuario', error);
+    res.status(500).json({ message: 'Error del servidor' });
+  }
+});
+router.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  console.log('Usuario recibido:', username);
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      console.log('Usuario no encontrado'); 
+      return res.status(400).json({ message: 'Usuario no encontrado' });
+    }
+
+    const isMatch = await user.matchPassword(password);
+    if (!isMatch) {
+      console.log('Contraseña incorrecta');
+      return res.status(400).json({ message: 'Contraseña incorrecta' });
+    }
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '1h',
+    });
+
+    console.log('Login exitoso, token generado');
+    return res.json({ token, username: user.username });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
 });
 
 module.exports = router;
