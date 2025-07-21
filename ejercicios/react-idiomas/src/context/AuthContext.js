@@ -19,24 +19,50 @@ export const AuthProvider = ({ children }) => {
     };
     checkToken();
   }, []);
-
+//LOGIN
   const login = async (username, password) => {
     try {
-      const response = await axios.post('http://192.168.16.112:5000/api/auth/login', {
+      const response = await axios.post('http://192.168.0.144:5000/api/auth/login', {
         username,
         password,
       });
 
-      // Si el login es exitoso
       setAuthToken(response.data.token);
       setUsername(response.data.username);
       await AsyncStorage.setItem('authToken', response.data.token);
       await AsyncStorage.setItem('username', response.data.username);
     } catch (error) {
-      console.error('Error en login:', error.response?.data || error.message);
+      //console.error('Error en login:', error.response?.data || error.message);
       throw new Error('Usuario o contraseña incorrectos');
     }
   };
+
+const register = async (username, password) => {
+  try {
+    const response = await axios.post('http://192.168.0.144:5000/api/auth/register', {
+      username,
+      password,
+    });
+
+    console.log('Respuesta de registro:', response.data); // 🐞 DEBUG
+
+    const { token, username: returnedUsername } = response.data;
+
+    if (!token || !returnedUsername) {
+      throw new Error('Faltan datos en la respuesta del servidor');
+    }
+
+    setAuthToken(token);
+    setUsername(returnedUsername);
+    await AsyncStorage.setItem('authToken', token);
+    await AsyncStorage.setItem('username', returnedUsername);
+
+  } catch (error) {
+    console.error('Error en registro:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || 'Error al registrar');
+  }
+};
+
 
   const logout = async () => {
     setAuthToken(null);
@@ -45,13 +71,12 @@ export const AuthProvider = ({ children }) => {
     await AsyncStorage.removeItem('username');
   };
 
+  // 👉 register agregado aquí
   return (
-    <AuthContext.Provider value={{ authToken, username, login, logout }}>
+    <AuthContext.Provider value={{ authToken, username, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext);

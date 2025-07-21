@@ -1,45 +1,42 @@
+// screens/RegisterScreen.js
 import React, { useState } from 'react';
 import { View, TextInput, Button, Text } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import Register from './Register';
-const LoginScreen = ({ navigation }) => {
-  const { login } = useAuth();
+
+const RegisterScreen = ({ navigation }) => {
+  const { register } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     try {
-      await login(username, password);
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Home' }],
-      });
+      await register(username, password);
+      navigation.navigate('Login');
     } catch (err) {
-      setError('Usuario o contraseña incorrectos');
+      setError('Error al registrar. Inténtalo de nuevo.');
     }
   };
 
   return (
     <View style={{ padding: 20 }}>
       <TextInput
-        placeholder="Usuario"
+        placeholder="Nuevo Usuario"
         value={username}
         onChangeText={setUsername}
         style={{ borderWidth: 1, marginBottom: 10, padding: 8 }}
       />
       <TextInput
-        placeholder="Contraseña"
+        placeholder="Nueva Contraseña"
         secureTextEntry
         value={password}
         onChangeText={setPassword}
         style={{ borderWidth: 1, marginBottom: 10, padding: 8 }}
       />
       {error && <Text style={{ color: 'red' }}>{error}</Text>}
-      <Button title="Iniciar Sesión" onPress={handleLogin} />
-      <Button title='Registrarse' onPress={()=> navigation.navigate('Register')}/>
+      <Button title="Crear Cuenta" onPress={handleRegister} />
     </View>
   );
 };
 
-export default LoginScreen;
+export default RegisterScreen;

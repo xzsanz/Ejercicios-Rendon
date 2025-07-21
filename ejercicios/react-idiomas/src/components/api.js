@@ -1,6 +1,6 @@
 // src/api.js
 import axios from 'axios';
-const API_URL = 'http://192.168.16.112:5000/api/auth/login';  // Si usas el emulador
+const API_URL = 'http://192.168.0.144:5000/api/auth/login';  // Si usas el emulador
 
 
 

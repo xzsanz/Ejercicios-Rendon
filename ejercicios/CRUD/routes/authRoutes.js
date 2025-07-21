@@ -11,19 +11,21 @@ router.post('/register', async (req, res) => {
   try {
     const userExists = await User.findOne({ username });
     if (userExists) {
-      return res.status(400).json({ message: 'El usuario ya existe' });
+      return res.status(400).json();
     }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    const user = new User({
-      username,
-      password: hashedPassword,
-    });
-    await user.save();
 
-    res.status(201).json({ message: 'Usuario creado exitosamente' });
+    const user = new User({ username, password: hashedPassword });
+    await user.save();
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '1h',
+    });
+    return res.status(201).json({ token, username: user.username });
+
   } catch (error) {
-    console.error('Error al registrar usuario', error);
+    //console.error('Error al registrar usuario', error);
     res.status(500).json({ message: 'Error del servidor' });
   }
 });
