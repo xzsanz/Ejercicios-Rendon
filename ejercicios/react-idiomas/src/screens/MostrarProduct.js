@@ -13,7 +13,7 @@ const MostrarProduct = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.get('http://192.168.0.144:5000/api/productos');
+      const response = await axios.get('http://localhost/api/productos');
       setProductos(response.data);
     } catch (err) {
       setError('Error al cargar los productos');

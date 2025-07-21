@@ -21,7 +21,7 @@ const AgregarProduct = ({ navigation }) => {
       setError('');
 
       const response = await axios.post(
-        'http://192.168.0.144:5000/api/productos',
+        'http://localhost:5000/api/productos',
         {
           name,
           description,
