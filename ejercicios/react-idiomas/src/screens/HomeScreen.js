@@ -34,6 +34,10 @@ const HomeScreen = ({ navigation }) => {
         title="Ver Productos"
         onPress={() => navigation.navigate('MostrarProduct')}
       />
+      <Button
+        title='Editar perfil'
+        onPress={()=> navigation.navigate('EditUsuario')}
+      />
       <Button title="Logout" onPress={handleLogout} />
     </View>
   );

@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
 //LOGIN
   const login = async (username, password) => {
     try {
-      const response = await axios.post('http://192.168.0.144:5000/api/auth/login', {
+      const response = await axios.post('http://10.0.2.2:5000/api/auth/login', {
         username,
         password,
       });

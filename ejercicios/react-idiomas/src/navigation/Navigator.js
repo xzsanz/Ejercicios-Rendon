@@ -6,6 +6,8 @@ import HomeScreen from '../screens/HomeScreen';
 import Register from '../screens/Register';
 import MostrarProduct from '../screens/MostrarProduct';
 import AgregarProduct from '../screens/AgregarProduct';
+import EditUsuario from '../screens/EditUsuario';
+
 const Stack = createStackNavigator();
 
 const Navigator = () => {
@@ -18,6 +20,7 @@ const Navigator = () => {
       <Stack.Screen name="Register" component={Register} />
       <Stack.Screen name="AgregarProduct" component={AgregarProduct} />
       <Stack.Screen name="MostrarProduct" component={MostrarProduct} />
+      <Stack.Screen name="EditUsuario" component={EditUsuario} />
     </Stack.Navigator>
   );
 };
