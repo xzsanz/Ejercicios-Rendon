@@ -3,6 +3,7 @@ import { View, Text, TextInput, Button, Image, Alert, ScrollView } from 'react-n
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import MapView, { Marker } from 'react-native-maps'; // Importa el componente MapView
 
 const EditUsuario = () => {
   const { authToken, username } = useAuth(); // Ya estás guardando esto
@@ -12,25 +13,36 @@ const EditUsuario = () => {
     email: '',
     phone: '',
     image: '',
+    location: { latitude: 0, longitude: 0 }, // Valor predeterminado
   });
 
   const [newImage, setNewImage] = useState(null);
 
-  // Obtener datos del usuario al cargar la pantalla
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await axios.get(`http://10.0.2.2:5000/api/auth/user/${username}`);
-        setUserData(res.data);
-        setNewImage(res.data.image); // Mostrar imagen actual
-      } catch (err) {
-        console.error('Error cargando datos del usuario:', err);
-        Alert.alert('Error', 'No se pudo cargar el perfil');
+ // Cargar datos del usuario al iniciar sesión
+useEffect(() => {
+  const fetchUser = async () => {
+    try {
+      const res = await axios.get(`http://10.0.2.2:5000/api/auth/user/${username}`);
+      setUserData(res.data);
+      setNewImage(res.data.image); 
+      if (res.data.location) {
+        setUserData((prevState) => ({
+          ...prevState,
+          location: {
+            latitude: res.data.location.coordinates[1], 
+            longitude: res.data.location.coordinates[0],
+          },
+        }));
       }
-    };
+    } catch (err) {
+      console.error('Error cargando datos del usuario:', err);
+      Alert.alert('Error', 'No se pudo cargar el perfil');
+    }
+  };
 
-    fetchUser();
-  }, []);
+  fetchUser();
+}, [username]);
+
 
   // Tomar nueva foto
   const takePhoto = async () => {
@@ -51,38 +63,54 @@ const EditUsuario = () => {
     }
   };
 
-  // Guardar cambios
-  const handleSave = async () => {
-    const formData = new FormData();
-    formData.append('name', userData.name);
-    formData.append('username', userData.username);
-    formData.append('email', userData.email);
-    formData.append('phone', userData.phone);
+  const handleMapRegionChange = (region) => {
+  //caonsole.log('Nueva ubicación:', region); 
+  setUserData({
+    ...userData,
+    location: {
+      latitude: region.latitude,
+      longitude: region.longitude,
+    },
+  });
+};
 
-    if (newImage && newImage !== userData.image) {
-      const filename = newImage.split('/').pop();
-      const ext = filename.split('.').pop();
-      formData.append('image', {
-        uri: newImage,
-        name: filename,
-        type: `image/${ext}`,
-      });
-    }
 
-    try {
-      await axios.put(`http://10.0.2.2:5000/api/auth/update/${userData._id}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${authToken}`, // si usas auth
-        },
-      });
+ const handleSave = async () => {
+  const formData = new FormData();
+  formData.append('name', userData.name);
+  formData.append('username', userData.username);
+  formData.append('email', userData.email);
+  formData.append('phone', userData.phone);
 
-      Alert.alert('Éxito', 'Perfil actualizado correctamente');
-    } catch (err) {
-      console.error('Error al actualizar perfil:', err.response?.data || err.message);
-      Alert.alert('Error', 'No se pudo actualizar el perfil');
-    }
-  };
+  if (newImage && newImage !== userData.image) {
+    const filename = newImage.split('/').pop();
+    const ext = filename.split('.').pop();
+    formData.append('image', {
+      uri: newImage,
+      name: filename,
+      type: `image/${ext}`,
+    });
+  }
+
+  // Enviar las coordenadas de latitud y longitud por separado
+  formData.append('latitude', userData.location.latitude);
+  formData.append('longitude', userData.location.longitude);
+
+  try {
+    await axios.put(`http://10.0.2.2:5000/api/auth/update/${userData._id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${authToken}`, // si usas auth
+      },
+    });
+
+    Alert.alert('Éxito', 'Perfil actualizado correctamente');
+  } catch (err) {
+    console.error('Error al actualizar perfil:', err.response?.data || err.message);
+    Alert.alert('Error', 'No se pudo actualizar el perfil');
+  }
+};
+
 
   return (
     <ScrollView contentContainerStyle={{ padding: 20 }}>
@@ -103,6 +131,37 @@ const EditUsuario = () => {
       {newImage ? (
         <Image source={{ uri: newImage }} style={{ width: 200, height: 200, marginVertical: 10 }} />
       ) : null}
+
+      {/* Mapa con la ubicación */}
+      <View style={{ height: 300, marginVertical: 20 }}>
+        {userData.location.latitude !== 0 && userData.location.longitude !== 0 ? (
+          <MapView
+            style={{ flex: 1 }}
+            initialRegion={{
+              latitude: userData.location.latitude,
+              longitude: userData.location.longitude,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
+            }}
+            onRegionChangeComplete={handleMapRegionChange}
+          >
+            <Marker
+              coordinate={{
+                latitude: userData.location.latitude,
+                longitude: userData.location.longitude,
+              }}
+              title="Ubicación actual"
+              draggable
+              onDragEnd={(e) => {
+                const newLocation = e.nativeEvent.coordinate;
+                handleMapRegionChange(newLocation);
+              }}
+            />
+          </MapView>
+        ) : (
+          <Text>No se pudo cargar la ubicación.</Text>
+        )}
+      </View>
 
       <Button title="Guardar Cambios" onPress={handleSave} />
     </ScrollView>

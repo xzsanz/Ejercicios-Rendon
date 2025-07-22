@@ -4,7 +4,6 @@ const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const User = require('../models/User');
 
-
 const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -12,11 +11,12 @@ const upload = multer({ storage });
 router.use(express.urlencoded({ extended: true }));
 router.use(express.json());
 
+// Registro de usuario
 router.post('/register', upload.single('image'), async (req, res) => {
-  const { name, username, phone, email, password } = req.body;
+  const { name, username, phone, email, password, latitude, longitude } = req.body;
   const image = req.file;
 
-  if (!name || !username || !phone || !email || !password) {
+  if (!name || !username || !phone || !email || !password || !latitude || !longitude) {
     return res.status(400).json({ message: 'Faltan campos obligatorios' });
   }
 
@@ -25,13 +25,18 @@ router.post('/register', upload.single('image'), async (req, res) => {
     if (userExists) {
       return res.status(400).json({ message: 'El usuario ya existe' });
     }
+
     const user = new User({
       name,
       username,
       phone,
       email,
       password,
-      image: image ? image.originalname : null
+      image: image ? image.originalname : null,
+      location: {
+        type: 'Point', // Tipo GeoJSON
+        coordinates: [parseFloat(longitude), parseFloat(latitude)] // Longitude, Latitude
+      },
     });
 
     await user.save();
@@ -47,20 +52,18 @@ router.post('/register', upload.single('image'), async (req, res) => {
   }
 });
 
+// Login de usuario
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
-  console.log('Usuario recibido:', username);
 
   try {
     const user = await User.findOne({ username });
     if (!user) {
-      console.log('Usuario no encontrado');
       return res.status(400).json({ message: 'Usuario no encontrado' });
     }
 
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
-      console.log('Contraseña incorrecta');
       return res.status(400).json({ message: 'Contraseña incorrecta' });
     }
 
@@ -68,7 +71,6 @@ router.post('/login', async (req, res) => {
       expiresIn: '1h',
     });
 
-    console.log('Login exitoso');
     return res.json({ token, username: user.username });
   } catch (error) {
     console.error('Error al iniciar sesión:', error);
@@ -76,22 +78,34 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Obtener los datos de un usuario
+// Obtener los datos del usuario por su username
 router.get('/user/:username', async (req, res) => {
   try {
-    const user = await User.findOne({ username: req.params.username }).select('-password'); // sin la contraseña
-    if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
-    res.json(user);
+    const user = await User.findOne({ username: req.params.username });
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+    // Devolvemos los datos del usuario, incluyendo la ubicación
+    res.json({
+      name: user.name,
+      username: user.username,
+      email: user.email,
+      phone: user.phone,
+      image: user.image,
+      location: user.location,
+    });
   } catch (error) {
-    console.error('Error al obtener usuario:', error);
+    console.error('Error al obtener perfil:', error);
     res.status(500).json({ message: 'Error del servidor' });
   }
 });
 
+// Actualizar los datos de un usuario
 router.put('/update/:id', upload.single('image'), async (req, res) => {
-  const { name, username, phone, email } = req.body;
+  const { name, username, phone, email, latitude, longitude } = req.body;
   const image = req.file;
+
+  console.log('Datos recibidos:', req.body);  // Verificar los datos que llegan
 
   try {
     const user = await User.findById(req.params.id);
@@ -106,6 +120,14 @@ router.put('/update/:id', upload.single('image'), async (req, res) => {
       user.image = image.originalname;
     }
 
+    // Si se envían las coordenadas, actualizamos la ubicación
+    if (latitude && longitude) {
+      user.location = {
+        type: 'Point',
+        coordinates: [parseFloat(longitude), parseFloat(latitude)]  // Guardamos la ubicación en formato GeoJSON
+      };
+    }
+
     await user.save();
     res.json({ message: 'Perfil actualizado correctamente' });
 
@@ -114,5 +136,6 @@ router.put('/update/:id', upload.single('image'), async (req, res) => {
     res.status(500).json({ message: 'Error del servidor' });
   }
 });
+
 
 module.exports = router;

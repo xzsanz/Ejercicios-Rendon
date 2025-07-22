@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Image, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, Button, Image, Alert, ScrollView, Modal } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
+import MapView, { Marker } from 'react-native-maps';
 
 const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState('');
@@ -10,14 +11,21 @@ const RegisterScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [image, setImage] = useState(null);
+  const [location, setLocation] = useState(null);
+  const [region, setRegion] = useState({
+    latitude: 19.4326,
+    longitude: -99.1332,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
+  });
 
-  // Validar formato de correo
+  const [mapVisible, setMapVisible] = useState(false);
+
   const isValidEmail = (email) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
   };
 
-  // Función para tomar una foto con la cámara
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
 
@@ -37,6 +45,19 @@ const RegisterScreen = ({ navigation }) => {
     }
   };
 
+  const showMap = () => {
+    setMapVisible(true);
+  };
+  const saveLocation = (coord) => {
+    setLocation(coord);
+    setRegion({
+      ...region,
+      latitude: coord.latitude,
+      longitude: coord.longitude,
+    });
+    setMapVisible(false);
+  };
+
   const registerUser = async () => {
     if (!name || !username || !phone || !email || !password) {
       Alert.alert('Error', 'Todos los campos son obligatorios.');
@@ -48,17 +69,24 @@ const RegisterScreen = ({ navigation }) => {
       return;
     }
 
+    if (!location) {
+      Alert.alert('Ubicación requerida', 'Por favor selecciona una ubicación en el mapa.');
+      return;
+    }
+
     const formData = new FormData();
-    formData.append("name", name);
-    formData.append("username", username);
-    formData.append("phone", phone);
-    formData.append("email", email);
-    formData.append("password", password);
+    formData.append('name', name);
+    formData.append('username', username);
+    formData.append('phone', phone);
+    formData.append('email', email);
+    formData.append('password', password);
+    formData.append('latitude', location?.latitude || region.latitude);
+    formData.append('longitude', location?.longitude || region.longitude);
 
     if (image) {
       const filename = image.split('/').pop();
       const fileExt = filename.split('.').pop();
-      formData.append("image", {
+      formData.append('image', {
         uri: image,
         name: filename,
         type: `image/${fileExt}`,
@@ -75,7 +103,7 @@ const RegisterScreen = ({ navigation }) => {
       Alert.alert('Éxito', 'Usuario registrado correctamente.');
       navigation.navigate('Login');
     } catch (error) {
-      console.error("Error al registrar usuario:", error);
+      console.error('Error al registrar usuario:', error);
       Alert.alert('Error', 'No se pudo registrar el usuario.');
     }
   };
@@ -98,10 +126,41 @@ const RegisterScreen = ({ navigation }) => {
       <TextInput value={password} onChangeText={setPassword} secureTextEntry />
 
       <Button title="Tomar Foto" onPress={takePhoto} />
-
       {image && <Image source={{ uri: image }} style={{ width: 200, height: 200, marginVertical: 10 }} />}
 
+      <Button title="Seleccionar ubicación en el mapa" onPress={showMap} />
+      {location && (
+        <Text>
+          Ubicación seleccionada: {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
+        </Text>
+      )}
+
       <Button title="Registrar" onPress={registerUser} />
+      
+      {/* Modal de Mapa */}
+      <Modal visible={mapVisible} animationType="slide">
+        <View style={{ flex: 1 }}>
+          <MapView
+            style={{ flex: 1 }}
+            region={region}
+            onRegionChangeComplete={(reg) => setRegion(reg)}
+          >
+            <Marker
+              coordinate={location || region}
+              draggable
+              onDragEnd={(e) => {
+                const coord = e.nativeEvent.coordinate;
+                saveLocation(coord); // guarda la nueva ubicacion
+              }}
+            />
+          </MapView>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 10 }}>
+            <Button title="Cancelar" onPress={() => setMapVisible(false)} />
+            <Button title="Guardar ubicación" onPress={() => saveLocation(region)} />
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
