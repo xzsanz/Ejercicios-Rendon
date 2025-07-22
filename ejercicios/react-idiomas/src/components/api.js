@@ -1,6 +1,6 @@
 // src/api.js
 import axios from 'axios';
-const API_URL = 'http://localhost:5000/api/auth/login';
+const API_URL = 'http://10.0.2.2:5000/api/auth/login';
 
 
 

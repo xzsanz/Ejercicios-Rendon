@@ -5,14 +5,22 @@ const authMiddleware = require ("../middleware/authMiddleware");
 const router = express.Router();
 
 //Creacion del producto (post)
-router.post("/",authMiddleware, async (req,res)=>{
-    try {
-        const product = await Product.create(req.body);
-        res.status(201).json(product);
-    } catch (error) {
-        res.status(400).json({ message: "Error al crear el producto", error });
-    }
+router.post("/", authMiddleware, async (req, res) => {
+  try {
+    const { name, price, description, imageUrl } = req.body; // Recibimos la URL de la imagen
+    const product = await Product.create({
+      name,
+      price,
+      description,
+      image: imageUrl, // Guardamos la URL de la imagen
+    });
+
+    res.status(201).json(product);
+  } catch (error) {
+    res.status(400).json({ message: "Error al crear el producto", error });
+  }
 });
+
 
 //leer productos (get)
 

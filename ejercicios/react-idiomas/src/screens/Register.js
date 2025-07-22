@@ -1,40 +1,80 @@
-// screens/RegisterScreen.js
 import React, { useState } from 'react';
-import { View, TextInput, Button, Text } from 'react-native';
-import { useAuth } from '../context/AuthContext';
+import { View, Text, TextInput, Button, Image, Alert } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import axios from 'axios';
 
 const RegisterScreen = ({ navigation }) => {
-  const { register } = useAuth();
-  const [username, setUsername] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [image, setImage] = useState(null);
 
-  const handleRegister = async () => {
+  // Función para seleccionar una imagen
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setImage(result.uri);
+    }
+  };
+
+  // Función para registrar el usuario
+  const registerUser = async () => {
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("phone", phone);
+    formData.append("email", email);
+    formData.append("password", password);
+
+    if (image) {
+      const filename = image.split('/').pop();
+      const type = `image/${filename.split('.').pop()}`;
+      formData.append("image", {
+        uri: image,
+        name: filename,
+        type,
+      });
+    }
+
     try {
-      await register(username, password);
-      navigation.navigate('Login');
-    } catch (err) {
-      setError('Error al registrar. Inténtalo de nuevo.');
+      const response = await axios.post('http://10.0.2.2:5000/api/auth/register', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      Alert.alert("Usuario registrado", "¡Te has registrado correctamente!");
+      navigation.navigate('Login'); // Redirige a Login
+    } catch (error) {
+      console.error("Error al registrar usuario", error);
+      Alert.alert("Error", "Hubo un error al registrar el usuario");
     }
   };
 
   return (
-    <View style={{ padding: 20 }}>
-      <TextInput
-        placeholder="Nuevo Usuario"
-        value={username}
-        onChangeText={setUsername}
-        style={{ borderWidth: 1, marginBottom: 10, padding: 8 }}
-      />
-      <TextInput
-        placeholder="Nueva Contraseña"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        style={{ borderWidth: 1, marginBottom: 10, padding: 8 }}
-      />
-      {error && <Text style={{ color: 'red' }}>{error}</Text>}
-      <Button title="Crear Cuenta" onPress={handleRegister} />
+    <View>
+      <Text>Nombre</Text>
+      <TextInput value={name} onChangeText={setName} />
+      <Text>Teléfono</Text>
+      <TextInput value={phone} onChangeText={setPhone} />
+      <Text>Correo</Text>
+      <TextInput value={email} onChangeText={setEmail} />
+      <Text>Contraseña</Text>
+      <TextInput value={password} onChangeText={setPassword} secureTextEntry />
+
+      <Button title="Seleccionar Imagen" onPress={pickImage} />
+
+      {image && (
+        <Image source={{ uri: image }} style={{ width: 200, height: 200 }} />
+      )}
+
+      <Button title="Registrar" onPress={registerUser} />
     </View>
   );
 };

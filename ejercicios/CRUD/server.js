@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const connectDb = require("./config/db");
 const loggerMiddleware = require("./middleware/loggerMiddleware");
+const path = require("path");
 
 const productRoutes = require("./routes/productRoutes");
 const authRoutes = require("./routes/authRoutes");
@@ -11,7 +12,6 @@ const app = express();
 
 connectDb();
 
-// Middlewares
 app.use(cors({
   origin: '*', 
   methods: ['GET', 'POST'],
@@ -19,7 +19,9 @@ app.use(cors({
 app.use(express.json());
 app.use(loggerMiddleware);
 
-// Rutas
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+
 app.use("/api/productos", productRoutes);
 app.use("/api/auth", authRoutes);
 

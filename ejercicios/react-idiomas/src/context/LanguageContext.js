@@ -27,8 +27,6 @@ const languages = {
   },
 };
 
-
-// Contexto de idioma
 const LanguageContext = createContext();
 
 export const useLanguage = () => {

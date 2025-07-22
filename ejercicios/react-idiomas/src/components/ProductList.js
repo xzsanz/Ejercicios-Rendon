@@ -3,7 +3,7 @@ import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { useLanguage } from '../context/LanguageContext';
 
 const ProductList = ({ products }) => {
-  const { translations } = useLanguage(); // Accedemos a las traducciones
+  const { translations } = useLanguage(); 
 
   return (
     <View style={styles.container}>
@@ -11,7 +11,7 @@ const ProductList = ({ products }) => {
         data={products}
         renderItem={({ item }) => (
           <View style={styles.productItem}>
-            {/* Usamos las traducciones para obtener el nombre del producto */}
+            {}
             <Text>{translations.productNames[item.id]}</Text>
           </View>
         )}
